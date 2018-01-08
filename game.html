@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript" src="jquery.min.js"></script>
+</head>
+<body>
+
+<canvas id="canvas" width="600" height="400"></canvas>
+
+<script>
+    $(document).ready(function(){
+
+        var Tail = function(x, y)
+        {
+            this.x = x;
+            this.y = y;
+        };
+
+        var Snake = function(length)
+        {
+            this.vehicleX = 1;
+            this.vehicleY = 0;
+            this.tails = [];
+
+            for (var i = length; i > 0; i--) {
+                this.tails.push(new Tail(i, 0));
+            }
+
+            this.move = function() {
+                var tail = this.tails.pop();
+                tail.x = this.tails[0].x + this.vehicleX;
+                tail.y = this.tails[0].y + this.vehicleY;
+                this.tails.unshift(tail)
+            };
+
+            this.canHit = function(x, y) {
+                var newX = this.tails[0].x + this.vehicleX;
+                var newY = this.tails[0].y + this.vehicleY;
+                return (x === null || newX == x) && (y === null || newY == y);
+            };
+
+            this.canCross = function() {
+                var newX = this.tails[0].x + this.vehicleX;
+                var newY = this.tails[0].y + this.vehicleY;
+                for (var i = 0; i < this.tails.length - 1; i++) {
+                    if (newX == this.tails[i].x && newY == this.tails[i].y) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+            this.eat = function(food) {
+                this.tails.unshift(new Tail(food.x, food.y));
+            };
+
+            this.turnLeft = function() {
+                if (this.vehicleX == 0) {
+                    this.vehicleX = -1;
+                    this.vehicleY = 0;
+                }
+            };
+
+            this.turnRight = function() {
+                if (this.vehicleX == 0) {
+                    this.vehicleX = 1;
+                    this.vehicleY = 0;
+                }
+            };
+
+            this.turnUp = function() {
+                if (this.vehicleY == 0) {
+                    this.vehicleX = 0;
+                    this.vehicleY = -1;
+                }
+            };
+
+            this.turnDown = function() {
+                if (this.vehicleY == 0) {
+                    this.vehicleX = 0;
+                    this.vehicleY = 1;
+                }
+            };
+        };
+
+        var Food = function(x, y)
+        {
+            this.x = x;
+            this.y = y;
+        };
+
+        var Game = function(element)
+        {
+            var canvas = element[0];
+            var context = canvas.getContext('2d');
+            var snake = null;
+            var food = null;
+            var timer = null;
+            var scale = 10;
+
+            var width = element.width();
+            var height = element.height();
+
+            var maxX = (width - scale) / scale;
+            var maxY = (height - scale) / scale;
+
+            this.start = function() {
+                createSnake();
+                createFood();
+                startTimer();
+            };
+
+            function createSnake() {
+                snake = new Snake(5);
+            }
+
+            function createFood() {
+                var x = Math.round(Math.random() * maxX);
+                var y = Math.round(Math.random() * maxY);
+                food = new Food(x, y);
+            }
+
+            function startTimer() {
+                if (typeof timer != 'undefined') {
+                    clearInterval(timer);
+                }
+                timer = setInterval(step, 150);
+            }
+
+            function step () {
+                if (snake.canHit(food.x, food.y)) {
+                    snake.eat(food);
+                    createFood();
+                } else if (snake.canCross() || snake.canHit(-1, null) || snake.canHit(maxX + 1, null) || snake.canHit(null, -1) || snake.canHit(null, maxY + 1)) {
+                    createSnake();
+                    createFood();
+                } else {
+                    snake.move();
+                }
+                drawDisplay();
+                drawFood(food);
+                drawSnake(snake);
+            }
+
+            function drawDisplay() {
+                context.fillStyle = 'white';
+                context.fillRect(0, 0, width, height);
+                context.strokeStyle = 'black';
+                context.strokeRect(0, 0, width, height);
+            }
+
+            function drawSnake(snake) {
+                for (var i = 0; i < snake.tails.length; i++) {
+                    drawCell(snake.tails[i].x, snake.tails[i].y, 'blue', 'white');
+                }
+            }
+
+            function drawFood(food) {
+                drawCell(food.x, food.y, 'red', 'white');
+            }
+
+            function drawCell(x, y, fill, stroke) {
+                context.fillStyle = fill;
+                context.fillRect(x * scale, y * scale, scale-1, scale-1);
+                context.strokeStyle = stroke;
+                context.fillRect(x * scale, y * scale, scale-1, scale-1);
+            }
+
+            this.keyDownListener = function(e){
+                var key = parseInt(e.which);
+                switch (key) {
+                    case 37: snake.turnLeft(); break;
+                    case 38: snake.turnUp(); break;
+                    case 39: snake.turnRight(); break;
+                    case 40: snake.turnDown(); break;
+                }
+            };
+        };
+
+        var game = new Game($('#canvas'));
+        $(document).keydown(game.keyDownListener);
+        game.start();
+    })
+</script>
+
+</body>
+</html>
+
